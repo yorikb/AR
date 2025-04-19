@@ -2,28 +2,17 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>MindAR Fullscreen AR</title>
+    <title>MindAR Fullscreen AR (Клонування моделі)</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
 
-    <!-- A-Frame & MindAR -->
+    <!-- A-Frame & MindAR.js -->
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
 
-    <!-- Fullscreen fix -->
+    <!-- Fullscreen CSS -->
     <style>
-      html, body {
-        margin: 0;
-        padding: 0;
-        height: 100%;
-        overflow: hidden;
-      }
-      a-scene {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100% !important;
-        height: 100% !important;
-      }
+      html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
+      a-scene { position: absolute; top: 0; left: 0; width: 100% !important; height: 100% !important; }
     </style>
   </head>
 
@@ -37,61 +26,61 @@
       device-orientation-permission-ui="enabled: true"
     >
       <a-assets>
-        <!-- Завантаження 3D-моделі -->
-        <a-asset-item id="modelAsset" src="https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/DamagedHelmet/glTF-Binary/DamagedHelmet.glb"></a-asset-item>
+        <a-asset-item
+          id="modelAsset"
+          src="https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/DamagedHelmet/glTF-Binary/DamagedHelmet.glb"
+        ></a-asset-item>
       </a-assets>
 
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-      <!-- Target anchor -->
+      <!-- Якір на мітці -->
       <a-entity id="anchor" mindar-image-target="targetIndex: 0">
-        <!-- Грузить модель та встановлює її позицію/масштаб -->
+        <!-- Початковий "прихований" приклад моделі -->
         <a-gltf-model
-          id="helmet"
+          id="templateModel"
           src="#modelAsset"
           scale="0.5 0.5 0.5"
           position="0 0 0"
+          visible="false"
         ></a-gltf-model>
       </a-entity>
     </a-scene>
 
     <script>
+      // Хак для мобільного Chrome
       window.addEventListener("load", () => {
-        // Hack for mobile browser to enter fullscreen
-        setTimeout(() => {
-          window.scrollTo(0, 1);
-        }, 100);
+        setTimeout(() => { window.scrollTo(0, 1); }, 100);
       });
 
       document.addEventListener("DOMContentLoaded", () => {
-        const sceneEl = document.querySelector("a-scene");
-        const anchorEl = document.querySelector("#anchor");
-        const modelEl = document.querySelector("#helmet");
+        const sceneEl   = document.querySelector("a-scene");
+        const anchorEl  = document.querySelector("#anchor");
+        const template  = document.querySelector("#templateModel");
 
-        let modelLoaded = false;
-        let modelMoved = false;
+        let modelReady = false;
+        let spawned    = false;
 
-        modelEl.addEventListener("model-loaded", () => {
-          console.log("✅ Модель завантажена");
-          modelLoaded = true;
+        // Переконуємося, що модель завантажена
+        template.addEventListener("model-loaded", () => {
+          console.log("✅ Готово: шаблон моделі завантажено");
+          modelReady = true;
         });
 
+        // Коли бачимо мітку — клонюємо модель і "ставимо" у кімнаті
         anchorEl.addEventListener("targetFound", () => {
-          console.log("🎯 Мітка знайдена");
-
-          if (modelLoaded && !modelMoved) {
-            modelMoved = true;
-
-            // Відкріпити модель
-            anchorEl.removeChild(modelEl);
-            sceneEl.appendChild(modelEl);
-
-            // Перемістити перед камерою
-            modelEl.setAttribute("position", "0 0 -1");
-            modelEl.setAttribute("scale", "0.5 0.5 0.5");
-            modelEl.setAttribute("rotation", "0 180 0");
-
-            console.log("📦 Модель переміщена в кімнату");
+          console.log("🎯 Подія targetFound");
+          if (modelReady && !spawned) {
+            spawned = true;
+            // Клон
+            const clone = template.cloneNode(true);
+            clone.setAttribute("visible", "true");
+            // Ставимо перед камерою
+            clone.setAttribute("position", "0 0 -1");
+            clone.setAttribute("rotation", "0 180 0");
+            clone.removeAttribute("id");  // унікальний, щоб не було дублікатів
+            sceneEl.appendChild(clone);
+            console.log("📦 Клон моделі створено та додано до сцени");
           }
         });
       });
