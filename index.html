@@ -40,7 +40,7 @@
 
                 // Завантаження GLTF моделі (замініть шлях на свій)
                 const loader = new THREE.GLTFLoader();
-                loader.load('./DamagedHelmet.glb', (gltf) => {
+                loader.load('https://yorikb.github.io/AR/DamagedHelmet.glb', (gltf) => {
                     model = gltf.scene;
                     model.scale.set(0.1, 0.1, 0.1); // Налаштуйте масштаб моделі
                 }, undefined, (error) => {
