@@ -78,6 +78,7 @@
             // Ставимо перед камерою
             clone.setAttribute("position", "0 0 0");
             clone.setAttribute("rotation", "0 0 0");
+            clone.setAttribute("scale", "0,2 0,2 0,2");
             clone.removeAttribute("id");  // унікальний, щоб не було дублікатів
             sceneEl.appendChild(clone);
             console.log("📦 Клон моделі створено та додано до сцени");
