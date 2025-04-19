@@ -38,7 +38,7 @@
     >
       <a-assets>
         <!-- Завантаження 3D-моделі -->
-        <a-asset-item id="modelAsset" src="DamagedHelmet.glb"></a-asset-item>
+        <a-asset-item id="modelAsset" src="https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/DamagedHelmet/glTF-Binary/DamagedHelmet.glb"></a-asset-item>
       </a-assets>
 
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
@@ -55,6 +55,46 @@
       </a-entity>
     </a-scene>
 
-    
+    <script>
+      window.addEventListener("load", () => {
+        // Hack for mobile browser to enter fullscreen
+        setTimeout(() => {
+          window.scrollTo(0, 1);
+        }, 100);
+      });
+
+      document.addEventListener("DOMContentLoaded", () => {
+        const sceneEl = document.querySelector("a-scene");
+        const anchorEl = document.querySelector("#anchor");
+        const modelEl = document.querySelector("#helmet");
+
+        let modelLoaded = false;
+        let modelMoved = false;
+
+        modelEl.addEventListener("model-loaded", () => {
+          console.log("✅ Модель завантажена");
+          modelLoaded = true;
+        });
+
+        anchorEl.addEventListener("targetFound", () => {
+          console.log("🎯 Мітка знайдена");
+
+          if (modelLoaded && !modelMoved) {
+            modelMoved = true;
+
+            // Відкріпити модель
+            anchorEl.removeChild(modelEl);
+            sceneEl.appendChild(modelEl);
+
+            // Перемістити перед камерою
+            modelEl.setAttribute("position", "0 0 -1");
+            modelEl.setAttribute("scale", "0.5 0.5 0.5");
+            modelEl.setAttribute("rotation", "0 180 0");
+
+            console.log("📦 Модель переміщена в кімнату");
+          }
+        });
+      });
+    </script>
   </body>
 </html>
