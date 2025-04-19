@@ -2,40 +2,80 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>MindAR.js Example</title>
-   <!-- <meta name="viewport" content="width=device-width, initial-scale=1" />-->
-    <!-- Підключення бібліотек -->
+    <title>MindAR Fullscreen AR</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+
+    <!-- A-Frame & MindAR -->
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+
+    <!-- Fullscreen fix -->
+    <style>
+      html, body {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        overflow: hidden;
+      }
+      a-scene {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100% !important;
+        height: 100% !important;
+      }
+    </style>
   </head>
+
   <body>
-    <a-scene mindar-image="imageTargetSrc: marker.mind; autoStart: true;" embedded color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: true">
-      <!-- Камера -->
+    <a-scene
+      mindar-image="imageTargetSrc: ./marker.mind; autoStart: true;"
+      embedded
+      color-space="sRGB"
+      renderer="colorManagement: true, physicallyCorrectLights"
+      vr-mode-ui="enabled: false"
+      device-orientation-permission-ui="enabled: true"
+    >
+      <a-assets>
+        <a-asset-item id="foxModel" src="https://cdn.jsdelivr.net/gh/KhronosGroup/glTF-Sample-Models@master/2.0/Fox/glTF/Fox.gltf"></a-asset-item>
+      </a-assets>
+
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-      <!-- Якір для мітки -->
-      <a-entity mindar-image-target="targetIndex: 0">
-        <!-- Модель -->
-        <a-gltf-model id="foxModel" src="https://cdn.jsdelivr.net/gh/KhronosGroup/glTF-Sample-Models@master/2.0/Fox/glTF/Fox.gltf" scale="0.02 0.02 0.02" position="0 0 0" rotation="0 0 0"></a-gltf-model>
+      <!-- Target anchor -->
+      <a-entity id="anchor" mindar-image-target="targetIndex: 0">
+        <a-gltf-model
+          id="fox"
+          src="#foxModel"
+          scale="0.02 0.02 0.02"
+          position="0 0 0"
+        ></a-gltf-model>
       </a-entity>
     </a-scene>
 
     <script>
+      window.addEventListener("load", () => {
+        // Hack for mobile browser to enter fullscreen
+        setTimeout(() => {
+          window.scrollTo(0, 1);
+        }, 100);
+      });
+
       document.addEventListener("DOMContentLoaded", () => {
         const sceneEl = document.querySelector("a-scene");
-        const modelEl = document.querySelector("#foxModel");
+        const anchorEl = document.querySelector("#anchor");
+        const modelEl = document.querySelector("#fox");
 
-        // Слухаємо подію розпізнавання мітки
-        sceneEl.addEventListener("targetFound", () => {
-          // Відкріплюємо модель від мітки
-          const parent = modelEl.parentNode;
-          parent.removeChild(modelEl);
+        anchorEl.addEventListener("targetFound", () => {
+          // Відкріпити модель від мітки
+          anchorEl.removeChild(modelEl);
           sceneEl.appendChild(modelEl);
 
-          // Встановлюємо позицію моделі в центр сцени
-          modelEl.setAttribute("position", "0 0 -1"); // 1 метр перед камерою
+          // Перемістити модель перед камерою
+          modelEl.setAttribute("position", "0 0 -1");
         });
       });
     </script>
   </body>
 </html>
+
