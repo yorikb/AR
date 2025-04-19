@@ -37,17 +37,19 @@
       device-orientation-permission-ui="enabled: true"
     >
       <a-assets>
-        <a-asset-item id="foxModel" src="https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/DamagedHelmet/glTF-Binary/DamagedHelmet.glb"></a-asset-item>
+        <!-- Завантаження 3D-моделі -->
+        <a-asset-item id="modelAsset" src="https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/DamagedHelmet/glTF-Binary/DamagedHelmet.glb"></a-asset-item>
       </a-assets>
 
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
       <!-- Target anchor -->
       <a-entity id="anchor" mindar-image-target="targetIndex: 0">
+        <!-- Грузить модель та встановлює її позицію/масштаб -->
         <a-gltf-model
-          id="fox"
-          src="#foxModel"
-          scale="0.02 0.02 0.02"
+          id="helmet"
+          src="#modelAsset"
+          scale="0.5 0.5 0.5"
           position="0 0 0"
         ></a-gltf-model>
       </a-entity>
@@ -64,18 +66,35 @@
       document.addEventListener("DOMContentLoaded", () => {
         const sceneEl = document.querySelector("a-scene");
         const anchorEl = document.querySelector("#anchor");
-        const modelEl = document.querySelector("#fox");
+        const modelEl = document.querySelector("#helmet");
+
+        let modelLoaded = false;
+        let modelMoved = false;
+
+        modelEl.addEventListener("model-loaded", () => {
+          console.log("✅ Модель завантажена");
+          modelLoaded = true;
+        });
 
         anchorEl.addEventListener("targetFound", () => {
-          // Відкріпити модель від мітки
-          anchorEl.removeChild(modelEl);
-          sceneEl.appendChild(modelEl);
+          console.log("🎯 Мітка знайдена");
 
-          // Перемістити модель перед камерою
-          modelEl.setAttribute("position", "0 0 -1");
+          if (modelLoaded && !modelMoved) {
+            modelMoved = true;
+
+            // Відкріпити модель
+            anchorEl.removeChild(modelEl);
+            sceneEl.appendChild(modelEl);
+
+            // Перемістити перед камерою
+            modelEl.setAttribute("position", "0 0 -1");
+            modelEl.setAttribute("scale", "0.5 0.5 0.5");
+            modelEl.setAttribute("rotation", "0 180 0");
+
+            console.log("📦 Модель переміщена в кімнату");
+          }
         });
       });
     </script>
   </body>
 </html>
-
