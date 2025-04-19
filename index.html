@@ -1,309 +1,43 @@
 <!DOCTYPE html>
 <html>
-<head>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>MindAR - Переміщення моделі з мітки в кімнату</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/mind-ar/1.2.2/mindar-image.prod.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/mind-ar/1.2.2/mindar-image-aframe.prod.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/aframe/1.4.2/aframe.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-  
-  <style>
-    body {
-      margin: 0;
-      overflow: hidden;
-    }
-    .buttons {
-      position: absolute;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 100;
-      display: flex;
-      gap: 10px;
-    }
-    button {
-      padding: 10px 20px;
-      background-color: rgba(0, 0, 0, 0.5);
-      color: white;
-      border: none;
-      border-radius: 5px;
-      font-size: 16px;
-    }
-    .instructions {
-      position: absolute;
-      top: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      background-color: rgba(0, 0, 0, 0.7);
-      color: white;
-      padding: 10px;
-      border-radius: 5px;
-      font-family: Arial, sans-serif;
-      text-align: center;
-      z-index: 100;
-      display: none;
-    }
-  </style>
-</head>
+  <head>
+    <meta charset="UTF-8" />
+    <title>MindAR + GLB Model</title>
+    <script src="https://cdn.jsdelivr.net/npm/aframe@1.4.2/dist/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.1.7/dist/mindar-image-aframe.prod.js"></script>
+    <style>
+      body { margin: 0; overflow: hidden; }
+      html, body, #ar-container { width: 100%; height: 100%; }
+    </style>
+  </head>
+  <body>
+    <div id="ar-container">
+      <a-scene
+        mindar-image="imageTargetSrc: marker.mind; autoStart: true;"
+        embedded
+        color-space="sRGB"
+        renderer="colorManagement: true, physicallyCorrectLights"
+        vr-mode-ui="enabled: false"
+        device-orientation-permission-ui="enabled: true"
+      >
+        <a-assets>
+          <!-- Підстав сюди посилання на свою модель -->
+          <a-asset-item id="foxModel" src="DamagedHelmet.glb"></a-asset-item>
+        </a-assets>
 
-<body>
-  <div class="instructions" id="moveInstructions">
-    Перетягніть модель, щоб перемістити її
-  </div>
-  <div class="buttons">
-    <button id="detachButton">Перемістити в кімнату</button>
-    <button id="resetButton">Повернути на мітку</button>
-  </div>
+        <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-  <a-scene mindar-image="imageTargetSrc: marker.mind;" color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
-    <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
-    
-    <a-entity mindar-image-target="targetIndex: 0">
-      <a-gltf-model id="modelObject" src="DamagedHelmet.glb" position="0 0.1 0" rotation="0 0 0" scale="0.5 0.5 0.5"></a-gltf-model>
-    </a-entity>
-  </a-scene>
+        <a-entity light="type: ambient; intensity: 1"></a-entity>
 
-  <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      const detachButton = document.getElementById('detachButton');
-      const resetButton = document.getElementById('resetButton');
-      const moveInstructions = document.getElementById('moveInstructions');
-      const modelObject = document.getElementById('modelObject');
-      const scene = document.querySelector('a-scene');
-      const camera = document.querySelector('a-camera');
-      
-      let isDetached = false;
-      let isDragging = false;
-      let worldPosition = new THREE.Vector3();
-      let worldQuaternion = new THREE.Quaternion();
-      let dragOffset = { x: 0, y: 0, z: 0 };
-      
-      // Оригінальна позиція та поворот для повернення на мітку
-      let originalParent = null;
-      let originalPosition = null;
-      let originalRotation = null;
-      
-      // Створюємо новий об'єкт для вільного переміщення в просторі
-      const freeObject = document.createElement('a-entity');
-      freeObject.setAttribute('id', 'freeObject');
-      scene.appendChild(freeObject);
-      
-      // Функція від'єднання від мітки
-      function detachFromMarker() {
-        if (isDetached) return;
-        
-        // Зберігаємо оригінальні значення
-        originalParent = modelObject.parentElement;
-        originalPosition = modelObject.getAttribute('position');
-        originalRotation = modelObject.getAttribute('rotation');
-        
-        // Отримуємо світову позицію моделі
-        const modelObj = modelObject.object3D;
-        modelObj.getWorldPosition(worldPosition);
-        modelObj.getWorldQuaternion(worldQuaternion);
-        
-        // Видаляємо модель з мітки і додаємо до вільного об'єкта
-        modelObject.parentElement.removeChild(modelObject);
-        freeObject.appendChild(modelObject);
-        
-        // Встановлюємо нову позицію у світових координатах відносно камери
-        modelObject.setAttribute('position', {
-          x: worldPosition.x,
-          y: worldPosition.y,
-          z: worldPosition.z
-        });
-        
-        // Показуємо інструкції
-        moveInstructions.style.display = 'block';
-        isDetached = true;
-        
-        // Додаємо можливість перетягування
-        enableDragging();
-      }
-      
-      // Функція повернення на мітку
-      function returnToMarker() {
-        if (!isDetached) return;
-        
-        // Видаляємо з вільного об'єкта
-        freeObject.removeChild(modelObject);
-        
-        // Повертаємо до оригінального батьківського елемента
-        originalParent.appendChild(modelObject);
-        
-        // Відновлюємо оригінальну позицію
-        modelObject.setAttribute('position', originalPosition);
-        modelObject.setAttribute('rotation', originalRotation);
-        
-        // Приховуємо інструкції
-        moveInstructions.style.display = 'none';
-        isDetached = false;
-        
-        // Вимикаємо перетягування
-        disableDragging();
-      }
-      
-      // Функції для перетягування об'єкта
-      function enableDragging() {
-        scene.addEventListener('mousedown', onMouseDown);
-        scene.addEventListener('mousemove', onMouseMove);
-        scene.addEventListener('mouseup', onMouseUp);
-        
-        scene.addEventListener('touchstart', onTouchStart, { passive: false });
-        scene.addEventListener('touchmove', onTouchMove, { passive: false });
-        scene.addEventListener('touchend', onTouchEnd);
-      }
-      
-      function disableDragging() {
-        scene.removeEventListener('mousedown', onMouseDown);
-        scene.removeEventListener('mousemove', onMouseMove);
-        scene.removeEventListener('mouseup', onMouseUp);
-        
-        scene.removeEventListener('touchstart', onTouchStart);
-        scene.removeEventListener('touchmove', onTouchMove);
-        scene.removeEventListener('touchend', onTouchEnd);
-      }
-      
-      function onMouseDown(event) {
-        if (!isDetached) return;
-        
-        const mouse = new THREE.Vector2(
-          (event.clientX / window.innerWidth) * 2 - 1,
-          -(event.clientY / window.innerHeight) * 2 + 1
-        );
-        
-        checkIntersection(mouse, event.clientX, event.clientY);
-      }
-      
-      function onMouseMove(event) {
-        if (!isDragging) return;
-        
-        moveObjectWithMouse(event.clientX, event.clientY);
-      }
-      
-      function onMouseUp() {
-        isDragging = false;
-      }
-      
-      function onTouchStart(event) {
-        if (!isDetached) return;
-        event.preventDefault();
-        
-        const touch = event.touches[0];
-        const mouse = new THREE.Vector2(
-          (touch.clientX / window.innerWidth) * 2 - 1,
-          -(touch.clientY / window.innerHeight) * 2 + 1
-        );
-        
-        checkIntersection(mouse, touch.clientX, touch.clientY);
-      }
-      
-      function onTouchMove(event) {
-        if (!isDragging) return;
-        event.preventDefault();
-        
-        const touch = event.touches[0];
-        moveObjectWithMouse(touch.clientX, touch.clientY);
-      }
-      
-      function onTouchEnd() {
-        isDragging = false;
-      }
-      
-      function checkIntersection(mouse, clientX, clientY) {
-        // Створюємо рейкастер для виявлення перетину
-        const raycaster = new THREE.Raycaster();
-        raycaster.setFromCamera(mouse, scene.camera.el.object3D);
-        
-        // Перевіряємо перетин з моделлю
-        const modelObj3D = modelObject.object3D;
-        const modelWorldPosition = new THREE.Vector3();
-        modelObj3D.getWorldPosition(modelWorldPosition);
-        
-        // Створюємо спрощений box для перевірки перетину
-        const box = new THREE.Box3().setFromObject(modelObj3D);
-        
-        const position = modelObject.getAttribute('position');
-        const screenPosition = worldToScreen(position.x, position.y, position.z);
-        
-        // Спрощений спосіб перевірки - відстань від мишки до центра об'єкта на екрані
-        const distance = Math.sqrt(
-          Math.pow(clientX - screenPosition.x, 2) + 
-          Math.pow(clientY - screenPosition.y, 2)
-        );
-        
-        // Якщо відстань менша за певне значення, вважаємо що відбувся перетин
-        if (distance < 100) {
-          isDragging = true;
-          
-          // Зберігаємо зміщення для плавного перетягування
-          dragOffset.x = screenPosition.x - clientX;
-          dragOffset.y = screenPosition.y - clientY;
-        }
-      }
-      
-      function moveObjectWithMouse(clientX, clientY) {
-        // Конвертуємо екранні координати у світові
-        const newPosition = screenToWorld(
-          clientX + dragOffset.x, 
-          clientY + dragOffset.y, 
-          -1 // відстань від камери
-        );
-        
-        // Оновлюємо позицію об'єкта
-        modelObject.setAttribute('position', {
-          x: newPosition.x,
-          y: newPosition.y,
-          z: newPosition.z
-        });
-      }
-      
-      // Допоміжні функції для конвертації координат
-      function worldToScreen(x, y, z) {
-        const pos = new THREE.Vector3(x, y, z);
-        const width = window.innerWidth;
-        const height = window.innerHeight;
-        
-        // Проекція позиції на екран
-        pos.project(scene.camera.el.object3D);
-        
-        return {
-          x: (pos.x * 0.5 + 0.5) * width,
-          y: (-pos.y * 0.5 + 0.5) * height
-        };
-      }
-      
-      function screenToWorld(x, y, depth) {
-        const cameraEl = camera;
-        const cameraObj = cameraEl.object3D;
-        const cameraPos = new THREE.Vector3();
-        cameraObj.getWorldPosition(cameraPos);
-        
-        // Отримуємо напрямок погляду камери
-        const direction = new THREE.Vector3(
-          (x / window.innerWidth) * 2 - 1,
-          -(y / window.innerHeight) * 2 + 1,
-          0.5
-        );
-        
-        direction.unproject(scene.camera.el.object3D);
-        direction.sub(cameraPos).normalize();
-        
-        // Розраховуємо позицію на певній відстані від камери
-        const pos = cameraPos.clone().add(direction.multiplyScalar(depth));
-        
-        return {
-          x: pos.x,
-          y: pos.y,
-          z: pos.z
-        };
-      }
-      
-      // Підключаємо обробники подій кнопок
-      detachButton.addEventListener('click', detachFromMarker);
-      resetButton.addEventListener('click', returnToMarker);
-    });
-  </script>
-</body>
+        <a-entity mindar-image-target="targetIndex: 0">
+          <a-gltf-model
+            src="#foxModel"
+            position="0 -0.25 0"
+            scale="0.2 0.2 0.2"
+            rotation="0 180 0"
+          ></a-gltf-model>
+        </a-entity>
+      </a-scene>
+    </div>
+  </body>
 </html>
