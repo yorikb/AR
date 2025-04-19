@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta charset="UTF-8" />
-    <title>MindAR — Test Marker</title>
+    <title>MindAR Marker Test</title>
     <script src="https://cdn.jsdelivr.net/npm/aframe@1.4.2/dist/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.1.7/dist/mindar-image-aframe.prod.js"></script>
     <style>
@@ -10,7 +10,6 @@
       #ar-container { width: 100vw; height: 100vh; }
     </style>
   </head>
-
   <body>
     <div id="ar-container">
       <a-scene
@@ -24,18 +23,17 @@
         <!-- Камера -->
         <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-        <!-- Освітлення -->
-        <a-entity light="type: directional; color: #ffffff; intensity: 1" position="1 2 1"></a-entity>
-        <a-entity light="type: ambient; color: #ffffff; intensity: 0.5"></a-entity>
+        <!-- Світло -->
+        <a-entity light="type: ambient; intensity: 1"></a-entity>
 
-        <!-- Маркер -->
+        <!-- Тестовий куб на мітці -->
         <a-entity mindar-image-target="targetIndex: 0">
-          <a-gltf-model
-            src="DamagedHelmet.glb"
-            position="0 0 0"
-            rotation="0 0 0"
-            scale="0.2 0.2 0.2"
-          ></a-gltf-model>
+          <a-box
+            position="0 0 -1"
+            rotation="0 45 0"
+            scale="0.3 0.3 0.3"
+            color="red"
+          ></a-box>
         </a-entity>
       </a-scene>
     </div>
