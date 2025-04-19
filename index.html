@@ -39,6 +39,9 @@
                 // model = new THREE.Mesh(geometry, material); // Простий куб як заповнювач
 
                 // Завантаження GLTF моделі (замініть шлях на свій)
+                
+                console.error( 'loading' );
+
                 const loader = new THREE.GLTFLoader();
                 loader.load('https://yorikb.github.io/AR/DamagedHelmet.glb', (gltf) => {
                     model = gltf.scene;
