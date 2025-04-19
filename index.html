@@ -76,8 +76,8 @@
             const clone = template.cloneNode(true);
             clone.setAttribute("visible", "true");
             // Ставимо перед камерою
-            clone.setAttribute("position", "0 0 -1");
-            clone.setAttribute("rotation", "0 180 0");
+            clone.setAttribute("position", "0 0 0");
+            clone.setAttribute("rotation", "0 0 0");
             clone.removeAttribute("id");  // унікальний, щоб не було дублікатів
             sceneEl.appendChild(clone);
             console.log("📦 Клон моделі створено та додано до сцени");
