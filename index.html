@@ -1,100 +1,79 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <meta charset="utf-8" />
-    <title>MindAR Fullscreen AR</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-
-    <!-- A-Frame & MindAR -->
-    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
-
-    <!-- Fullscreen fix -->
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MindAR.js - Переміщення моделі з мітки</title>
+    <script src="https://cdn.jsdelivr.net/npm/mindar@1.2.3/dist/mindar-image.prod.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.152.2/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.152.2/examples/jsm/loaders/GLTFLoader.js"></script>
     <style>
-      html, body {
-        margin: 0;
-        padding: 0;
-        height: 100%;
-        overflow: hidden;
-      }
-      a-scene {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100% !important;
-        height: 100% !important;
-      }
+        body { margin: 0; }
+        canvas { display: block; }
     </style>
-  </head>
-
-  <body>
-    <a-scene
-      mindar-image="imageTargetSrc: ./marker.mind; autoStart: true;"
-      embedded
-      color-space="sRGB"
-      renderer="colorManagement: true, physicallyCorrectLights"
-      vr-mode-ui="enabled: false"
-      device-orientation-permission-ui="enabled: true"
-    >
-      <a-assets>
-        <!-- Завантаження 3D-моделі -->
-        <a-asset-item id="modelAsset" src="DamagedHelmet.glb"></a-asset-item>
-      </a-assets>
-
-      <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
-
-      <!-- Target anchor -->
-      <a-entity id="anchor" mindar-image-target="targetIndex: 0">
-        <!-- Грузить модель та встановлює її позицію/масштаб -->
-        <a-gltf-model
-          id="helmet"
-          src="#modelAsset"
-          scale="0.5 0.5 0.5"
-          position="0 0 0"
-        ></a-gltf-model>
-      </a-entity>
-    </a-scene>
+</head>
+<body>
+    <div style="position: relative;">
+        <canvas id="sceneCanvas" width="800" height="600"></canvas>
+        <div id="loading" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">Завантаження...</div>
+    </div>
 
     <script>
-      window.addEventListener("load", () => {
-        // Hack for mobile browser to enter fullscreen
-        setTimeout(() => {
-          window.scrollTo(0, 1);
-        }, 100);
-      });
+        document.addEventListener('DOMContentLoaded', () => {
+            const sceneCanvas = document.getElementById('sceneCanvas');
+            const loadingElement = document.getElementById('loading');
 
-      document.addEventListener("DOMContentLoaded", () => {
-        const sceneEl = document.querySelector("a-scene");
-        const anchorEl = document.querySelector("#anchor");
-        const modelEl = document.querySelector("#helmet");
+            let mindarThree = null;
+            let model = null;
+            let anchor = null;
 
-        let modelLoaded = false;
-        let modelMoved = false;
+            const start = async () => {
+                mindarThree = new window.MINDAR.image.MindARThree({
+                    container: sceneCanvas,
+                    imageTargetSrc: 'marker.mind', // Замініть на шлях до вашого файлу .mind
+                });
 
-        modelEl.addEventListener("model-loaded", () => {
-          console.log("✅ Модель завантажена");
-          modelLoaded = true;
+                const { renderer, scene, camera } = mindarThree;
+
+                const geometry = new THREE.BoxGeometry(0.2, 0.2, 0.2);
+                const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+                // model = new THREE.Mesh(geometry, material); // Простий куб як заповнювач
+
+                // Завантаження GLTF моделі (замініть шлях на свій)
+                const loader = new THREE.GLTFLoader();
+                loader.load('DamagedHelmet.glb', (gltf) => {
+                    model = gltf.scene;
+                    model.scale.set(0.1, 0.1, 0.1); // Налаштуйте масштаб моделі
+                }, undefined, (error) => {
+                    console.error('An error happened loading the model', error);
+                });
+
+                anchor = mindarThree.addAnchor(0); // Індекс цілі, зазвичай 0 для першої цілі
+
+                anchor.onTargetFound = () => {
+                    console.log('Ціль знайдено');
+                    if (model) {
+                        anchor.group.add(model);
+                    }
+                }
+
+                anchor.onTargetLost = () => {
+                    console.log('Ціль втрачено');
+                    if (model && anchor.group.children.includes(model)) {
+                        anchor.group.remove(model);
+                        scene.add(model); // Додаємо модель безпосередньо до сцени, зберігаючи її останнє положення
+                    }
+                }
+
+                await mindarThree.start();
+                loadingElement.style.display = 'none';
+
+                renderer.setAnimationLoop(() => {
+                    renderer.render(scene, camera);
+                });
+            }
+
+            start();
         });
-
-        anchorEl.addEventListener("targetFound", () => {
-          console.log("🎯 Мітка знайдена");
-
-          if (modelLoaded && !modelMoved) {
-            modelMoved = true;
-
-            // Відкріпити модель
-            anchorEl.removeChild(modelEl);
-            sceneEl.appendChild(modelEl);
-
-            // Перемістити перед камерою
-            modelEl.setAttribute("position", "0 0 -1");
-            modelEl.setAttribute("scale", "0.5 0.5 0.5");
-            modelEl.setAttribute("rotation", "0 180 0");
-
-            console.log("📦 Модель переміщена в кімнату");
-          }
-        });
-      });
     </script>
-  </body>
+</body>
 </html>
