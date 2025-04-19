@@ -18,16 +18,19 @@
     </div>
 
     <script>
+        import { MindARThree } from 'mindar-image-three';
+
         document.addEventListener('DOMContentLoaded', () => {
+          
             const sceneCanvas = document.getElementById('sceneCanvas');
             const loadingElement = document.getElementById('loading');
 
             let mindarThree = null;
             let model = null;
             let anchor = null;
-
+            
             const start = async () => {
-                mindarThree = new mindar-image-three.MindARThree({
+                mindarThree = new MindARThree({
                     container: sceneCanvas,
                     imageTargetSrc: 'marker.mind', // Замініть на шлях до вашого файлу .mind
                 });
